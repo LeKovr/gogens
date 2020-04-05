@@ -5,13 +5,13 @@ Processing .proto for golang project via docker image
 
 This image has protobuf package from alpine distributive and the following plugins:
 
-* [grpc](https://google.golang.org/grpc
-* [gogo/protobuf](https://github.com/gogo/protobuf
-* [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway
-* [go-proto-validators](https://github.com/mwitkow/go-proto-validators
-* [nrpc](https://github.com/nats-rpc/
-* [soap-proxy](https://github.com/UNO-SOFT/soap-proxy
-* [grpcer](https://github.com/UNO-SOFT/grpcer
+* [grpc](https://google.golang.org/grpc)
+* [gogo/protobuf](https://github.com/gogo/protobuf)
+* [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
+* [go-proto-validators](https://github.com/mwitkow/go-proto-validators)
+* [nrpc](https://github.com/nats-rpc/)
+* [soap-proxy](https://github.com/UNO-SOFT/soap-proxy)
+* [grpcer](https://github.com/UNO-SOFT/grpcer)
 
 ## Usage
 
