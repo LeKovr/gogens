@@ -43,6 +43,7 @@ which will generate:
 
 * [ ] [protoc-gen-doc](https://github.com/sourcegraph/prototools)
 * [ ] [protoc-gen-gotemplate](https://github.com/moul/protoc-gen-gotemplate)
+* [ ] Look at [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)
 
 ## Thanks
 
