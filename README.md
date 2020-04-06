@@ -12,6 +12,7 @@ This image has protobuf package from alpine distributive and the following plugi
 * [nrpc](https://github.com/nats-rpc/)
 * [soap-proxy](https://github.com/UNO-SOFT/soap-proxy)
 * [grpcer](https://github.com/UNO-SOFT/grpcer)
+* [proto docs](https://github.com/pseudomuto/protoc-gen-doc)
 
 ## Usage
 
@@ -27,6 +28,8 @@ docker run -ti --rm \
     --grpcer_out=soap:soap \
     --wsdl_out=cmd/webserver/ \
     --nrpc_out=. \
+    --doc_out=docs \
+    --doc_opt=markdown,messages.md \
     messages.proto
 ```
 which will generate:
@@ -38,12 +41,15 @@ which will generate:
 * cmd/webserver/messages.wsdl - WSDL file for SOAP service
 * cmd/webserver/messages.wsdl.go - WSDL for SOAP service as golang variable
 * messages.nrpc.go - NATS service (TODO: this file is obsolete and needs update)
+* docs/messages.md - markdown docs for .proto, there are [several formats](https://github.com/pseudomuto/protoc-gen-doc#invoking-the-plugin) available
 
-## TODO
+## Plans
 
-* [ ] [protoc-gen-doc](https://github.com/sourcegraph/prototools)
-* [ ] [protoc-gen-gotemplate](https://github.com/moul/protoc-gen-gotemplate)
-* [ ] Look at [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)
+The following plugins might be added in future:
+
+* [protoc-gen-gotemplate](https://github.com/moul/protoc-gen-gotemplate)
+* [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)
+* [buf.build](https://buf.build/)
 
 ## Thanks
 

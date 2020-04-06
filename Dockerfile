@@ -9,8 +9,8 @@ ARG gen_gogo=1.3.1
 ARG gen_gateway=1.14.3
 ARG gen_validator=0.3.0
 ARG gen_wsdl=0.8.3
-
-ARG protoc=3.11.4
+ARG gen_soap=0.4.5
+ARG gen_doc=1.3.1
 
 # Build all with golang image
 FROM golang:${go}-alpine${alpine} AS builder
@@ -21,6 +21,8 @@ ARG gen_gogo
 ARG gen_gateway
 ARG gen_validator
 ARG gen_wsdl
+ARG gen_soap
+ARG gen_doc
 
 # Speed up build if proxy given
 ARG GOPROXY
@@ -32,6 +34,7 @@ WORKDIR /out/include
 
 # nats-nrpc has no version yet
 RUN go get -u github.com/nats-rpc/nrpc/protoc-gen-nrpc
+# nrpc.proto used in .proto for nats options
 RUN install -m 444 -D /go/src/github.com/nats-rpc/nrpc/nrpc.proto -t github.com/nats-rpc/nrpc
 
 ENV GO111MODULE on
@@ -52,19 +55,15 @@ RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${
 RUN install -m 444 -D $(find /go/pkg/mod/github.com/mwitkow/go-proto-validators@v* -name '*.proto') -t github.com/mwitkow/go-proto-validators
 
 RUN go get -u github.com/UNO-SOFT/soap-proxy/protoc-gen-wsdl@v${gen_wsdl}
-RUN go get -u github.com/UNO-SOFT/grpcer/protoc-gen-grpcer@v0.4.5
+RUN go get -u github.com/UNO-SOFT/grpcer/protoc-gen-grpcer@v${gen_soap}
+
+RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v${gen_doc}
 
 FROM alpine:$alpine
-
-ARG protoc
 
 RUN apk --update --no-cache add protobuf libxml2-utils
 
 COPY --from=builder /go/bin/protoc* /usr/local/bin/
 COPY --from=builder /out/include /usr/local/include
-
-#COPY --from=build /tmp/grpc/bins/opt/grpc_* /usr/local/bin/
-#COPY --from=build /tmp/grpc/libs/opt/ /usr/local/lib/
-#COPY --from=builder /usr/local/bin/prototool /usr/local/bin/prototool
 
 ENTRYPOINT ["protoc", "-I/usr/local/include", "-I/usr/local/include/github.com/gogo/protobuf/protobuf"]
