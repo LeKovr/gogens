@@ -1,69 +1,69 @@
 
+
 # Docker image versions
-ARG alpine=3.11
-ARG go=1.14.0
+ARG go_ver=v1.18.5-alpine3.16.2
+ARG buf_ver=1.7.0
 
-# Package versions
-ARG grpc=1.24.0
-ARG gen_gogo=1.3.1
-ARG gen_gateway=1.14.3
-ARG gen_validator=0.3.0
-ARG gen_wsdl=0.8.3
-ARG gen_soap=0.4.5
-ARG gen_doc=1.3.1
+# Docker images
+ARG go_img=ghcr.io/dopos/golang-alpine
 
-# Build all with golang image
-FROM golang:${go}-alpine${alpine} AS builder
+ARG gen_ver=v1.28.1
+ARG gen_grpc_ver=v1.2.0
+ARG gen_doc_ver=v1.5.1
+ARG gen_gateway_ver=v2.11.3
+ARG gen_gateway_ts_ver=v1.1.2
+ARG gen_validate_ver=v0.6.7
+ARG gowrap_ver=v1.2.7
+ARG esbuild_ver=v0.15.9
 
-# Declare args used for build
-ARG grpc
-ARG gen_gogo
-ARG gen_gateway
-ARG gen_validator
-ARG gen_wsdl
-ARG gen_soap
-ARG gen_doc
 
-# Speed up build if proxy given
-ARG GOPROXY
-RUN echo $GOPROXY
+FROM ${go_img}:${go_ver} as golang
 
-RUN apk --update add git
+ENV CGO_ENABLED=0 GO111MODULE=on
 
-WORKDIR /out/include
+ARG gen_ver
+ARG gen_grpc_ver
+ARG gen_doc_ver
+ARG gen_gateway_ver
+ARG gen_gateway_ts_ver
+ARG gen_validate_ver
+ARG gowrap_ver
+ARG esbuild_ver
 
-# nats-nrpc has no version yet
-RUN go get -u github.com/nats-rpc/nrpc/protoc-gen-nrpc
-# nrpc.proto used in .proto for nats options
-RUN install -m 444 -D /go/src/github.com/nats-rpc/nrpc/nrpc.proto -t github.com/nats-rpc/nrpc
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@${gen_ver}
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@${gen_grpc_ver}
+RUN go install github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@${gen_doc_ver}
+RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@${gen_gateway_ver}
+RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@${gen_gateway_ver}
+RUN go install github.com/grpc-ecosystem/protoc-gen-grpc-gateway-ts@${gen_gateway_ts_ver}
+RUN go install github.com/envoyproxy/protoc-gen-validate@${gen_validate_ver}
 
-ENV GO111MODULE on
+# non protoc generators
 
-RUN go get -u google.golang.org/grpc@v${grpc}
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogo@v${gen_gogo}
-RUN go get -u github.com/gogo/protobuf/protoc-gen-gogofast@v${gen_gogo}
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/gogo/protobuf@v*/gogoproto/*.proto) -t github.com/gogo/protobuf/gogoproto
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/gogo/protobuf@v*/protobuf/google/protobuf/*.proto) -t github.com/gogo/protobuf/protobuf/google/protobuf
+RUN go install github.com/hexdigest/gowrap/cmd/gowrap@${gowrap_ver}
+RUN go install github.com/evanw/esbuild/cmd/esbuild@${esbuild_ver}
 
-RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v${gen_gateway}
-RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v${gen_gateway}
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v*/third_party/googleapis/google/rpc -name '*.proto') -t google/rpc/
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v*/third_party/googleapis/google/api -name '*.proto') -t google/api/
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v*/protoc-gen-swagger/options -name '*.proto') -t protoc-gen-swagger/options
+FROM bufbuild/buf:${buf_ver} as buf
 
-RUN go get -u github.com/mwitkow/go-proto-validators/protoc-gen-govalidators@v${gen_validator}
-RUN install -m 444 -D $(find /go/pkg/mod/github.com/mwitkow/go-proto-validators@v* -name '*.proto') -t github.com/mwitkow/go-proto-validators
+ARG gen_gateway_ver
 
-RUN go get -u github.com/UNO-SOFT/soap-proxy/protoc-gen-wsdl@v${gen_wsdl}
-RUN go get -u github.com/UNO-SOFT/grpcer/protoc-gen-grpcer@v${gen_soap}
+COPY --from=golang /go/bin /go/bin
+RUN ls -l /go/bin
 
-RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v${gen_doc}
+WORKDIR /app
+# sample .proto for buf mod update
+COPY --from=golang /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${gen_gateway_ver}/examples/internal/proto/examplepb/echo_service.proto ./proto/service.proto
 
-FROM alpine:$alpine
+#RUN apk add --no-cache libstdc++
 
-RUN apk --update --no-cache add protobuf libxml2-utils
+# Prepare buf cache
 
-COPY --from=builder /go/bin/protoc* /usr/local/bin/
-COPY --from=builder /out/include /usr/local/include
+COPY buf.* ./
+RUN buf mod update
+COPY template.tmpl .
+COPY proto.config.swagger.yaml .
 
-ENTRYPOINT ["protoc", "-I/usr/local/include", "-I/usr/local/include/github.com/gogo/protobuf/protobuf"]
+ENV PATH="/go/bin:${PATH}"
+RUN buf --debug generate --template buf.gen.yaml --path proto
+
+ENTRYPOINT ["/usr/local/bin/buf"]

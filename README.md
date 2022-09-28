@@ -1,57 +1,61 @@
-# dockerfile-protoc-go
-Processing .proto for golang project via docker image
+# gogens
+Set of golang generators for GRPC projects
 
-## Plugins
+## Generators
 
-This image has protobuf package from alpine distributive and the following plugins:
+### Packages used via [buf.build](https://buf.build/)
 
-* [grpc](https://google.golang.org/grpc)
-* [gogo/protobuf](https://github.com/gogo/protobuf)
-* [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
-* [go-proto-validators](https://github.com/mwitkow/go-proto-validators)
-* [nrpc](https://github.com/nats-rpc/)
-* [soap-proxy](https://github.com/UNO-SOFT/soap-proxy)
-* [grpcer](https://github.com/UNO-SOFT/grpcer)
-* [proto docs](https://github.com/pseudomuto/protoc-gen-doc)
+* [protobuf](https://google.golang.org/protobuf)
+* [google grpc](https://google.golang.org/grpc)
+* [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc)
+* protoc-gen-grpc-gateway and protoc-gen-openapiv2 from [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway)
+
+
+* [protoc-gen-grpc-gateway-ts](https://github.com/grpc-ecosystem/protoc-gen-grpc-gateway-ts)
+* [protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)
+
+### non protoc generators
+
+* [gowrap](https://github.com/hexdigest/gowrap)
+* [esbuild](https://github.com/evanw/esbuild)
 
 ## Usage
 
-For ./proto/messages.proto run command
+### Generate GRPC code
+
+For ./proto/service.proto run command
+
 ```
-docker run -ti --rm \
-  -w $PWD \
-  -v $PWD:$PWD \
-  tenderpro/protoc-go -I=./proto \
-    --gogofast_out=plugins=grpc:./proto/ \
-    --grpc-gateway_out=logtostderr=true:./proto/ \
-    --swagger_out=logtostderr=true:./assets/ \
-    --grpcer_out=soap:soap \
-    --wsdl_out=cmd/webserver/ \
-    --nrpc_out=. \
-    --doc_out=docs \
-    --doc_opt=markdown,messages.md \
-    messages.proto
+docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd gogens generate --template buf.gen.yaml --path proto
 ```
-which will generate:
+Result:
 
-* proto/messages.pb.go - gRPC service
-* proto/messages.pb.gw.go - JSON service
-* assets/messages.swagger.json - openapi definition
-* soap/messages.grpcer.go - SOAP service
-* cmd/webserver/messages.wsdl - WSDL file for SOAP service
-* cmd/webserver/messages.wsdl.go - WSDL for SOAP service as golang variable
-* messages.nrpc.go - NATS service (TODO: this file is obsolete and needs update)
-* docs/messages.md - markdown docs for .proto, there are [several formats](https://github.com/pseudomuto/protoc-gen-doc#invoking-the-plugin) available
+* proto/README.md - markdown docs for .proto
+* zgen/go/proto - golang code
+** service_grpc.pb.go - gRPC service
+** service.pb.go
+** service.pb.gw.go - JSON service
+** service.pb.validate.go - API validator
+* zgen/ts - typescript code
+** proto/service.pb.ts - TS client
+** fetch.pb.ts - fetch lib
 
-## Plans
+### Generate JS client
 
-The following plugins might be added in future:
+For generated zgen/ts files run
 
-* [protoc-gen-gotemplate](https://github.com/moul/protoc-gen-gotemplate)
-* [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)
-* [buf.build](https://buf.build/)
+```
+docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd gogens --entrypoint /opt/go/esbuild \
+ service.pb.ts --bundle \
+ --outfile=/mnt/pwd/static/js/api.js --global-name=AppAPI
+```
+
+Result:
+
+* static/js/api.js - service JS client for use in browser
 
 ## Thanks
 
 * https://github.com/higebu/docker-protoc-go
 * https://github.com/TheThingsIndustries/docker-protobuf
+* https://github.com/eugene-bert/docker-buf
