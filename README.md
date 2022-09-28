@@ -21,12 +21,25 @@ Set of golang generators for GRPC projects
 
 ## Usage
 
+### buf.gen.yaml example
+
+See [here](https://github.com/LeKovr/hocon/blob/main/buf.gen.yaml)
+
+### Fetch buf.lock from gogens image
+
+```
+id=$$(docker create ghcr.io/apisite/gogens) ; \
+docker cp $id:/app/buf.lock buf.lock ; \
+docker rm -v $id
+```
+
+
 ### Generate GRPC code
 
 For ./proto/service.proto run command
 
 ```
-docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd gogens generate --template buf.gen.yaml --path proto
+docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd ghcr.io/apisite/gogens:latest generate --template buf.gen.yaml --path proto
 ```
 Result:
 
@@ -45,9 +58,8 @@ Result:
 For generated zgen/ts files run
 
 ```
-docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd gogens --entrypoint /opt/go/esbuild \
- service.pb.ts --bundle \
- --outfile=/mnt/pwd/static/js/api.js --global-name=AppAPI
+docker run --rm  -v `pwd`:/mnt/pwd -w /mnt/pwd --entrypoint /go/bin/esbuild ghcr.io/apisite/gogens:latest  \
+  zgen/ts/proto/service.pb.ts --bundle --outfile=/mnt/pwd/static/js/api.js --global-name=AppAPI
 ```
 
 Result:
