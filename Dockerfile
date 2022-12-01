@@ -57,7 +57,7 @@ COPY --from=golang /go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2@${gen_g
 #RUN apk add --no-cache libstdc++
 
 # Prepare buf cache
-
+ENV BUF_CACHE_DIR="/cache"
 COPY buf.* ./
 RUN buf mod update
 COPY template.tmpl .
