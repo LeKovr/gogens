@@ -1,7 +1,7 @@
 
 
 # Docker image versions
-ARG go_ver=v1.18.5-alpine3.16.2
+ARG go_ver=v1.18.6-alpine3.16.2
 ARG buf_ver=1.7.0
 
 # Docker images
